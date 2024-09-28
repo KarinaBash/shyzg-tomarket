@@ -104,7 +104,7 @@ class Tomarket:
         url = 'https://api-web.tomarket.ai/tomarket-game/v1/user/login'
         accounts = []
         for query in queries:
-            data = json.dumps({'init_data':query,'invite_code':'0000cYQe','from':'','is_bot':False})
+            data = json.dumps({'init_data':query,'invite_code':'000002El','from':'','is_bot':False})
             headers = {
                 **self.headers,
                 'Content-Length': str(len(data)),
