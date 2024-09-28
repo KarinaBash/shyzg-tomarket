@@ -43,59 +43,42 @@ class Tomarket:
             flush=True
         )
 
-    def process_queries(self, lines_per_file=10):
-        if not os.path.exists('queries.txt'):
-            raise FileNotFoundError(f"File 'queries.txt' Not Found. Please Ensure It Exists")
-
-        with open('queries.txt', 'r') as f:
-            queries = [line.strip() for line in f if line.strip()]
-
-        if not queries:
-            raise ValueError("File 'queries.txt' Is Empty")
-
-        account_files = [f for f in os.listdir() if f.startswith('accounts-') and f.endswith('.json')]
-        if account_files:
-            account_files.sort(key=lambda x: int(re.findall(r'\d+', x)[0]))
-        else:
-            account_files = []
-
-        for account_file in account_files:
-            with open(account_file, 'r') as file:
-                accounts_data = json.load(file)
-                accounts = accounts_data.get('accounts', [])
-
-            if len(accounts) < 10:
-                remaining_slots = 10 - len(accounts)
-                chunk = queries[:remaining_slots]
-                new_accounts = self.user_login(chunk)
-                accounts.extend(new_accounts)
-                accounts_data['accounts'] = accounts
-
-                with open(account_file, 'w') as outfile:
-                    json.dump(accounts_data, outfile, indent=4)
-
-                self.print_timestamp(f"{Fore.GREEN + Style.BRIGHT}[ Updated '{account_file}' With {len(new_accounts)} New Token And Name ]{Style.RESET_ALL}")
-
-                queries = queries[remaining_slots:]
-
-                if len(queries) == 0:
-                    break
-
-        last_file_number = int(re.findall(r'\d+', account_files[-1])[0]) if account_files else 0
-
-        for i in range(0, len(queries), lines_per_file):
-            chunk = queries[i:i + lines_per_file]
-            file_index = last_file_number + 1
-            accounts_file = f"accounts-{file_index}.json"
-
-            accounts = self.user_login(chunk)
-
-            with open(accounts_file, 'w') as outfile:
-                json.dump({'accounts': accounts}, outfile, indent=4)
-
-            self.print_timestamp(f"{Fore.GREEN + Style.BRIGHT}[ Successfully Generated Tokens In '{accounts_file}' ]{Style.RESET_ALL}")
-            last_file_number += 1
-
+    def process_queries(self, max_accounts=1000):
+    if not os.path.exists('queries.txt'):
+        raise FileNotFoundError(f"File 'queries.txt' Not Found. Please Ensure It Exists")
+    
+    with open('queries.txt', 'r') as f:
+        queries = [line.strip() for line in f if line.strip()]
+    
+    if not queries:
+        raise ValueError("File 'queries.txt' Is Empty")
+    
+    accounts_file = 'accounts.json'
+    
+    if os.path.exists(accounts_file):
+        with open(accounts_file, 'r') as file:
+            accounts_data = json.load(file)
+            accounts = accounts_data.get('accounts', [])
+    else:
+        accounts = []
+    
+    while queries and len(accounts) < max_accounts:
+        remaining_slots = max_accounts - len(accounts)
+        chunk = queries[:remaining_slots]
+        new_accounts = self.user_login(chunk)
+        accounts.extend(new_accounts)
+        
+        with open(accounts_file, 'w') as outfile:
+            json.dump({'accounts': accounts}, outfile, indent=4)
+        
+        self.print_timestamp(f"{Fore.GREEN + Style.BRIGHT}[ Updated '{accounts_file}' With {len(new_accounts)} New Token And Name ]{Style.RESET_ALL}")
+        
+        queries = queries[len(new_accounts):]
+    
+    if len(accounts) >= max_accounts:
+        self.print_timestamp(f"{Fore.YELLOW + Style.BRIGHT}[ Maximum number of accounts ({max_accounts}) reached ]{Style.RESET_ALL}")
+    elif not queries:
+        self.print_timestamp(f"{Fore.GREEN + Style.BRIGHT}[ All queries processed ]{Style.RESET_ALL}")
     def load_accounts_from_file(self, file_path):
         with open(file_path, 'r') as file:
             return json.load(file)['accounts']
@@ -909,11 +892,8 @@ class Tomarket:
 if __name__ == '__main__':
     try:
         init(autoreset=True)
-
         tomarket = Tomarket()
-
-        account_files = [f for f in os.listdir() if f.startswith('accounts-') and f.endswith('.json')]
-        account_files.sort(key=lambda x: int(re.findall(r'\d+', x)[0]))
+        accounts_file = 'accounts.json'
 
         tomarket.print_timestamp(f"{Fore.MAGENTA + Style.BRIGHT}[ Select an option ]{Style.RESET_ALL}")
         tomarket.print_timestamp(
@@ -924,48 +904,28 @@ if __name__ == '__main__':
         tomarket.print_timestamp(
             f"{Fore.MAGENTA + Style.BRIGHT}[ 2 ]{Style.RESET_ALL}"
             f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
-            f"{Fore.CYAN + Style.BRIGHT}[ Use Existing accounts-*.json ]{Style.RESET_ALL}"
+            f"{Fore.CYAN + Style.BRIGHT}[ Use Existing accounts.json ]{Style.RESET_ALL}"
         )
-
         initial_choice = int(input(
             f"{Fore.CYAN + Style.BRIGHT}[ Enter The Number Corresponding To Your Choice ]{Style.RESET_ALL}"
             f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
         ))
+
         if initial_choice == 1:
             tomarket.print_timestamp(f"{Fore.CYAN + Style.BRIGHT}[ Processing Queries to Generate Tokens ]{Style.RESET_ALL}")
             tomarket.process_queries()
             tomarket.print_timestamp(f"{Fore.CYAN + Style.BRIGHT}[ Token Generation Completed ]{Style.RESET_ALL}")
-
-            account_files = [f for f in os.listdir() if f.startswith('accounts-') and f.endswith('.json')]
-            account_files.sort(key=lambda x: int(re.findall(r'\d+', x)[0]))
-
-            if not account_files:
-                raise FileNotFoundError("No 'accounts-*.json' Files Found In The Directory. Please Generate Tokens First By Selecting Option 1.")
+            if not os.path.exists(accounts_file):
+                raise FileNotFoundError(f"'{accounts_file}' Not Found. Token Generation May Have Failed.")
         elif initial_choice == 2:
-            if not account_files:
-                raise FileNotFoundError("No 'accounts-*.json' Files Found In The Directory. Please Generate Tokens First By Selecting Option 1.")
+            if not os.path.exists(accounts_file):
+                raise FileNotFoundError(f"'{accounts_file}' Not Found. Please Generate Tokens First By Selecting Option 1.")
         else:
             raise ValueError("Invalid Initial Choice. Please Run The Script Again And Choose A Valid Option")
 
-        tomarket.print_timestamp(f"{Fore.MAGENTA + Style.BRIGHT}[ Select The Accounts File To Use ]{Style.RESET_ALL}")
-        for i, accounts_file in enumerate(account_files, start=1):
-            tomarket.print_timestamp(
-                f"{Fore.MAGENTA + Style.BRIGHT}[ {i} ]{Style.RESET_ALL}"
-                f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
-                f"{Fore.CYAN + Style.BRIGHT}[ {accounts_file} ]{Style.RESET_ALL}"
-            )
-
-        choice = int(input(
-            f"{Fore.CYAN + Style.BRIGHT}[ Enter The Number Corresponding To The File You Want To Use ]{Style.RESET_ALL}"
-            f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
-        )) - 1
-        if choice < 0 or choice >= len(account_files):
-            raise ValueError("Invalid Choice. Please Run The Script Again And Choose A Valid Option")
-
-        selected_accounts_file = account_files[choice]
-        accounts = tomarket.load_accounts_from_file(selected_accounts_file)
-
+        accounts = tomarket.load_accounts_from_file(accounts_file)
         tomarket.main(accounts)
+
     except (ValueError, IndexError, FileNotFoundError) as e:
         tomarket.print_timestamp(f"{Fore.RED + Style.BRIGHT}[ {str(e)} ]{Style.RESET_ALL}")
     except KeyboardInterrupt:
