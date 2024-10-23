@@ -109,7 +109,7 @@ class Tomarket:
 
     async def generate_token(self, query: str):
         url = 'https://api-web.tomarket.ai/tomarket-game/v1/user/login'
-        data = json.dumps({'init_data':query,'invite_code':'0000cYQe','from':'','is_bot':False})
+        data = json.dumps({'init_data':query,'invite_code':'000002El','from':'','is_bot':False})
         headers = {
             **self.headers,
             'Content-Length': str(len(data)),
@@ -180,8 +180,11 @@ class Tomarket:
                     rank_data = await response.json()
                     if rank_data['status'] == 0:
                         if rank_data['data']['isCreated']:
-                            return await self.rank_upgrade(token=token, stars=rank_data['data']['unusedStars'])
-                        return await self.rank_evaluate(token=token)
+                            current_rank = rank_data["data"]["currentRank"]
+                            self.print_timestamp(
+                                f"{Fore.GREEN + Style.BRIGHT}[ Current Rank: {current_rank['name']} (Rank: {current_rank['rank']}, Stars: {current_rank['stars']}, Rank Percent: {current_rank['rankPercent']}%, Level: {current_rank['level']}) ]{Style.RESET_ALL}")
+                        return await self.rank_upgrade(token=token, stars=rank_data['data']['unusedStars'])
+                    return await self.rank_evaluate(token=token)
         except ClientResponseError as e:
             return self.print_timestamp(f"{Fore.RED + Style.BRIGHT}[ An HTTP Error Occurred While Rank Data: {str(e)} ]{Style.RESET_ALL}")
         except Exception as e:
@@ -342,7 +345,7 @@ class Tomarket:
                         game_play = await response.json()
                         if game_play['status'] == 0:
                             await asyncio.sleep(random.randint(33, 35))
-                            await self.game_claim(token=token, points=random.randint(6000, 6001))
+                            await self.game_claim(token=token, points=random.randint(550, 600))
                         elif game_play['status'] == 500 and game_play['message'] == 'no chance':
                             return self.print_timestamp(f"{Fore.RED + Style.BRIGHT}[ No Chance To Start Game ]{Style.RESET_ALL}")
             except ClientResponseError as e:
@@ -689,8 +692,7 @@ class Tomarket:
                 for (token, first_name) in accounts:
                     self.print_timestamp(
                         f"{Fore.WHITE + Style.BRIGHT}[ Home ]{Style.RESET_ALL}"
-                        f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
-                        f"{Fore.CYAN + Style.BRIGHT}[ {first_name} ]{Style.RESET_ALL}"
+                         
                     )
                     await self.daily_claim(token=token)
                     balance = await self.user_balance(token=token)
@@ -709,44 +711,58 @@ class Tomarket:
                         else:
                             await self.farm_start(token=token)
                         total_balance += int(float(balance['data']['available_balance']))
+                        
                     await asyncio.sleep(3)
-
-                for (token, first_name) in accounts:
-                    self.print_timestamp(
-                        f"{Fore.WHITE + Style.BRIGHT}[ Spin ]{Style.RESET_ALL}"
-                        f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
-                        f"{Fore.CYAN + Style.BRIGHT}[ {first_name} ]{Style.RESET_ALL}"
-                    )
-                    await self.spin_assets(token=token)
-                    await asyncio.sleep(3)
-
-                for (token, first_name) in accounts:
-                    self.print_timestamp(
-                        f"{Fore.WHITE + Style.BRIGHT}[ Home/Rank ]{Style.RESET_ALL}"
-                        f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
-                        f"{Fore.CYAN + Style.BRIGHT}[ {first_name} ]{Style.RESET_ALL}"
-                    )
+                    self.print_timestamp(f"{Fore.WHITE + Style.BRIGHT}[ Home/Rank ]{Style.RESET_ALL}" f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"  f"{Fore.CYAN + Style.BRIGHT}[ {first_name} ]{Style.RESET_ALL}")
+                    # self.print_timestamp(f"{Fore.WHITE + Style.BRIGHT}[ Home/Rank ]{Style.RESET_ALL}" f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}")
                     await self.rank_data(token=token)
                     await asyncio.sleep(3)
-
-                for (token, first_name) in accounts:
-                    self.print_timestamp(
-                        f"{Fore.WHITE + Style.BRIGHT}[ Home/Play Passes ]{Style.RESET_ALL}"
-                        f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
-                        f"{Fore.CYAN + Style.BRIGHT}[ {first_name} ]{Style.RESET_ALL}"
-                    )
+                    self.print_timestamp(f"{Fore.WHITE + Style.BRIGHT}[ Home/Play Passes ]{Style.RESET_ALL}" f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}" f"{Fore.CYAN + Style.BRIGHT}[ {first_name} ]{Style.RESET_ALL}")
                     await self.game_play(token=token)
                     await asyncio.sleep(3)
-
-                for (token, first_name) in accounts:
-                    self.print_timestamp(
-                        f"{Fore.WHITE + Style.BRIGHT}[ Tasks ]{Style.RESET_ALL}"
-                        f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
-                        f"{Fore.CYAN + Style.BRIGHT}[ {first_name} ]{Style.RESET_ALL}"
-                    )
+                    self.print_timestamp(f"{Fore.WHITE + Style.BRIGHT}[ Spin ]{Style.RESET_ALL}" f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}" f"{Fore.CYAN + Style.BRIGHT}[ {first_name} ]{Style.RESET_ALL}")
+                    await self.spin_assets(token=token)
+                    await asyncio.sleep(3)
+                    self.print_timestamp(f"{Fore.WHITE + Style.BRIGHT}[ Tasks ]{Style.RESET_ALL}" f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}" f"{Fore.CYAN + Style.BRIGHT}[ {first_name} ]{Style.RESET_ALL}")
                     await self.tasks_list(token=token)
                     await self.tasks_puzzle(token=token)
-                    await asyncio.sleep(3)
+
+                # for (token, first_name) in accounts:
+                #     self.print_timestamp(
+                #         f"{Fore.WHITE + Style.BRIGHT}[ Spin ]{Style.RESET_ALL}"
+                #         f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
+                #         f"{Fore.CYAN + Style.BRIGHT}[ {first_name} ]{Style.RESET_ALL}"
+                #     )
+                #     await self.spin_assets(token=token)
+                #     await asyncio.sleep(3)
+
+                # for (token, first_name) in accounts:
+                #     self.print_timestamp(
+                #         f"{Fore.WHITE + Style.BRIGHT}[ Home/Rank ]{Style.RESET_ALL}"
+                #         f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
+                #         f"{Fore.CYAN + Style.BRIGHT}[ {first_name} ]{Style.RESET_ALL}"
+                #     )
+                #     await self.rank_data(token=token)
+                #     await asyncio.sleep(3)
+
+                # for (token, first_name) in accounts:
+                #     self.print_timestamp(
+                #         f"{Fore.WHITE + Style.BRIGHT}[ Home/Play Passes ]{Style.RESET_ALL}"
+                #         f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
+                #         f"{Fore.CYAN + Style.BRIGHT}[ {first_name} ]{Style.RESET_ALL}"
+                #     )
+                #     await self.game_play(token=token)
+                #     await asyncio.sleep(3)
+
+                # for (token, first_name) in accounts:
+                #     self.print_timestamp(
+                #         f"{Fore.WHITE + Style.BRIGHT}[ Tasks ]{Style.RESET_ALL}"
+                #         f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
+                #         f"{Fore.CYAN + Style.BRIGHT}[ {first_name} ]{Style.RESET_ALL}"
+                #     )
+                #     await self.tasks_list(token=token)
+                #     await self.tasks_puzzle(token=token)
+                #     await asyncio.sleep(3)
 
                 if farming_times:
                     wait_times = [farm_end_time - datetime.now().astimezone().timestamp() for farm_end_time in farming_times if farm_end_time > datetime.now().astimezone().timestamp()]
@@ -777,23 +793,26 @@ if __name__ == '__main__':
 
         init(autoreset=True)
         tomarket = Tomarket()
-        tomarket.print_timestamp(
-            f"{Fore.GREEN + Style.BRIGHT}[ 1 ]{Style.RESET_ALL}"
-            f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
-            f"{Fore.BLUE + Style.BRIGHT}[ Generate Tokens ]{Style.RESET_ALL}"
-        )
-        tomarket.print_timestamp(
-            f"{Fore.GREEN + Style.BRIGHT}[ 2 ]{Style.RESET_ALL}"
-            f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
-            f"{Fore.BLUE + Style.BRIGHT}[ Use Existing accounts-*.json ]{Style.RESET_ALL}"
-        )
+        # tomarket.print_timestamp(
+        #     f"{Fore.GREEN + Style.BRIGHT}[ 1 ]{Style.RESET_ALL}"
+        #     f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
+        #     f"{Fore.BLUE + Style.BRIGHT}[ Generate Tokens ]{Style.RESET_ALL}"
+        # )
+        # tomarket.print_timestamp(
+        #     f"{Fore.GREEN + Style.BRIGHT}[ 2 ]{Style.RESET_ALL}"
+        #     f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
+        #     f"{Fore.BLUE + Style.BRIGHT}[ Use Existing accounts-*.json ]{Style.RESET_ALL}"
+        # )
 
-        initial_choice = int(input(
-            f"{Fore.BLUE + Style.BRIGHT}[ {datetime.now().astimezone().strftime('%x %X %Z')} ]{Style.RESET_ALL}"
-            f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
-            f"{Fore.YELLOW + Style.BRIGHT}[ Select Option ]{Style.RESET_ALL}"
-            f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
-        ))
+        # initial_choice = int(input(
+        #     f"{Fore.BLUE + Style.BRIGHT}[ {datetime.now().astimezone().strftime('%x %X %Z')} ]{Style.RESET_ALL}"
+        #     f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
+        #     f"{Fore.YELLOW + Style.BRIGHT}[ Select Option ]{Style.RESET_ALL}"
+        #     f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
+        # ))
+        
+        initial_choice = 2
+        
         if initial_choice == 1:
             lines_per_file = int(input(
                 f"{Fore.BLUE + Style.BRIGHT}[ {datetime.now().astimezone().strftime('%x %X %Z')} ]{Style.RESET_ALL}"
@@ -824,12 +843,15 @@ if __name__ == '__main__':
                 f"{Fore.BLUE + Style.BRIGHT}[ {accounts_file} ]{Style.RESET_ALL}"
             )
 
-        choice = int(input(
-            f"{Fore.BLUE + Style.BRIGHT}[ {datetime.now().astimezone().strftime('%x %X %Z')} ]{Style.RESET_ALL}"
-            f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
-            f"{Fore.YELLOW + Style.BRIGHT}[ Select File You Want To Use ]{Style.RESET_ALL}"
-            f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
-        )) - 1
+        # choice = int(input(
+        #     f"{Fore.BLUE + Style.BRIGHT}[ {datetime.now().astimezone().strftime('%x %X %Z')} ]{Style.RESET_ALL}"
+        #     f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
+        #     f"{Fore.YELLOW + Style.BRIGHT}[ Select File You Want To Use ]{Style.RESET_ALL}"
+        #     f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
+        # )) - 1 
+        
+        choice = 0
+        
         if choice < 0 or choice >= len(account_files):
             raise ValueError("Invalid Choice. Please Run The Script Again And Choose A Valid Option")
 
